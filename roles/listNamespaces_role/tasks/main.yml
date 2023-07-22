@@ -1,0 +1,12 @@
+---
+# list all namespaces inm k8s cluster
+- name: List namespaces
+  k8s_info:
+    kubeconfig: '/home/jupiter/.kube/config'
+    kind: Namespace
+  register: myoutput
+
+# print only namespace names
+- name: Print output
+  debug:
+    msg: "{{ myoutput | json_query('resources[*].metadata.name') }}"
