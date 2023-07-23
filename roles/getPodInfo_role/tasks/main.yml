@@ -1,2 +1,48 @@
 ---
-# tasks file for getNamespaces
+# list all pods in specific ns
+- name: List all pods in specific namespaces
+  k8s_info:
+    kubeconfig: '/home/jupiter/.kube/config'
+    kind: Pod
+    namespace: product-capera-int
+  register: all_pods
+
+
+# get pod info from pod name
+- name: Get pod info
+  k8s_info:
+    kubeconfig: '/home/jupiter/.kube/config'
+    kind: Pod
+    namespace: product-capera-int
+    name: apigateway-64d7788dc4-lhbb6
+  register: pod_info
+
+
+
+- name: LastTransitionTime of Status
+  debug: msg="{{ pod_info | json_query(jmesquery) }}"
+  vars:
+    jmesquery: "resources[*].{Initialized : status.conditions[0].lastTransitionTime}"
+
+- name: LastTransitionTime of Status
+  debug: msg="{{ pod_info | json_query(jmesquery) }}"
+  vars:
+    jmesquery: "resources[*].{Ready : status.conditions[1].lastTransitionTime}"
+
+- name: LastTransitionTime of Status
+  debug: msg="{{ pod_info | json_query(jmesquery) }}"
+  vars:
+    jmesquery: "resources[*].{ContainersReady : status.conditions[2].lastTransitionTime}"
+
+- name: LastTransitionTime of Status  
+  debug: msg="{{ pod_info | json_query(jmesquery) }}"
+  vars:
+    jmesquery: "resources[*].{PodScheduled : status.conditions[3].lastTransitionTime}"
+
+
+- name: Check if prometheus is accessible
+  uri:
+    url: http://prometheus.plateaux.softtech/
+    method: GET
+    validate_certs: false
+    status_code: 200

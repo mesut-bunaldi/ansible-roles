@@ -4,4 +4,4 @@
   collections:
     - kubernetes.core
   roles:
-    - listNamespaces_role
+    - getPodInfo_role
