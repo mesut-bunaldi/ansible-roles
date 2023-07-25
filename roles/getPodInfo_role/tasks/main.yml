@@ -1,76 +1,41 @@
 ---
-
-#get all namespaces
-- name: Get all namespaces
-  k8s_info:
-    kubeconfig: '/home/jupiter/.kube/config'
-    kind: Namespace
-  register: namespaces
-
-#print all namespaces
-- name: Print all namespaces
-  debug: msg="{{ namespaces | json_query(jmesquery) }}"
-  vars:
-    jmesquery: "resources[*].{Name : metadata.name}"
 # get pod info from pod name
 - name: Get pod info
   k8s_info:
-    kubeconfig: '/home/jupiter/.kube/config'
+    kubeconfig: '{{ kubeconfig }}'
     kind: Pod
-    namespace: fafitem-product-emtia-mr-463-custom-dev
-    name: fafmarket-596496c8cd-j9sx5
+    namespace: '{{ namespace_name }}'
+    name: '{{ pod_name }}'
   register: pod_info
 
 
-- name: creation time of pod
+# we are getting timestamps from pod -o yaml ############################################
+
+
+- name: deug multiline
   debug: msg="{{ pod_info | json_query(jmesquery) }}"
   vars:
-    jmesquery: "resources[*].{CreationTime : metadata.creationTimestamp}"
+    jmesquery: "resources[*].{CreationTime : metadata.creationTimestamp, PodScheduled : status.conditions[3].lastTransitionTime, Initialized : status.conditions[0].lastTransitionTime, ContainersReady : status.conditions[2].lastTransitionTime, Ready : status.conditions[1].lastTransitionTime}"
 
 
-- name: PodScheduled Time of Status
-  debug: msg="{{ pod_info | json_query(jmesquery) }}"
-  vars:
-    jmesquery: "resources[*].{PodScheduled : status.conditions[3].lastTransitionTime}"
+##########################################################################################  
 
-
-- name: LastTransitionTime of Status
-  debug: msg="{{ pod_info | json_query(jmesquery) }}"
-  vars:
-    jmesquery: "resources[*].{Initialized : status.conditions[0].lastTransitionTime}"
-
-
-- name: LastTransitionTime of Status
-  debug: msg="{{ pod_info | json_query(jmesquery) }}"
-  vars:
-    jmesquery: "resources[*].{ContainersReady : status.conditions[2].lastTransitionTime}"
-
-- name: LastTransitionTime of Status
-  debug: msg="{{ pod_info | json_query(jmesquery) }}"
-  vars:
-    jmesquery: "resources[*].{Ready : status.conditions[1].lastTransitionTime}"
-
-# - name: Check if prometheus is accessible
-#   uri:
-#     url: http://prometheus.plateaux.softtech/
-#     method: GET
-#     validate_certs: false
-#     status_code: 200
-
-
-
-#get pod events fafmarket-596496c8cd-j9sx5
-- name: Get pod events
+- name: Get events of pod
   k8s_info:
-    kubeconfig: '/home/jupiter/.kube/config'
+    kubeconfig: '{{ kubeconfig }}'
     kind: Event
-    namespace: fafitem-product-emtia-mr-463-custom-dev
+    namespace: '{{ namespace_name }}'
     field_selectors:
-      - involvedObject.name=fafmarket-596496c8cd-j9sx5
+      - involvedObject.name={{ pod_name }}
   register: pod_events
 
-# print pulled reason and message if reason pulled
-- name: Print pulled reason and message if reason pulled
-  debug: msg="{{ pod_events | json_query(jmesquery) }}"
-  vars:
-    jmesquery: "resources[*].{Reason : reason, Message : message}"
+
+# for loop to get all events of pod and set_fact only message if reason is Pulled and disable logs
+- name: Get pulled events
+  set_fact:
+    pulled_events: "{{ pulled_events | default([]) + [item] }}"
+  loop: "{{ pod_events.resources }}"
+  when: item.reason == 'Pulled'
+  loop_control:
+    label: "{{ item.message, item.reason }}"
+

@@ -1,2 +1,8 @@
 ---
 # vars file for getNamespaces
+
+
+#create pod_name variable
+pod_name: fafbankintegration-577c8b755d-c8dgt
+namespace_name: fafitem-product-emtia-mr-463-custom-dev
+kubeconfig: /home/jupiter/.kube/config
